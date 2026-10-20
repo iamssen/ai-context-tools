@@ -4,8 +4,8 @@ Copy TODO instructions and file references for AI coding agents such as Codex, C
 
 ## Usage
 
-- Click **Copy TODO as AI Prompt** above a `// TODO` comment.
-- Right-click a line number and choose **Copy File Path and Line**.
+- Click **Copy TODO as AI Prompt** above a comment containing an uppercase `TODO` word in a supported language.
+- Right-click a line number and choose **Copy Path and Line**.
 - Both commands are also available in the Command Palette under **AI Context Tools**, using the current cursor line.
 - Paste the copied text into your AI coding agent.
 
@@ -45,14 +45,33 @@ Settings and TODO text are read when copying; changes do not require rebuilding.
 
 ## Supported comments
 
-Standalone and inline, uppercase `// TODO` comments are supported, with or without a colon:
+Standalone and inline TODOs are detected inside comments using TextMate grammars. Strings and ordinary code are excluded. `TODO` is case-sensitive, must be a separate word, and can appear anywhere in the comment, with or without a colon:
 
 ```ts
 // TODO: Add validation.
 const value = 1; // TODO remove this
+/* TODO: Add validation. */
+/**
+ * TODO: Update this step.
+ * This following line is not included when copying.
+ */
 ```
 
-Detection uses a regular expression, so `// TODO` inside strings can also be detected. Only that line is copied; block comments and multiline TODOs are not supported. Save untitled files before using the commands. Local files and remote workspace files are supported. Remote paths refer to the remote filesystem.
+Line comments (`//`, `#`, `--`, `;`, etc.) and block comments (`/* */`, `<!-- -->`, `<# #>`, etc.) follow the selected language's grammar. Only the comment portion on the TODO line is copied, preserving comment markers present on that line. Adjacent lines and surrounding code are excluded. A line receives at most one lens; if multiple separate comments contain TODOs on the same line, the first is copied.
+
+Supported VS Code language IDs:
+
+- Web: `javascript`, `javascriptreact`, `typescript`, `typescriptreact`, `html`, `xml`, `css`, `scss`, `sass`, `less`, `vue`, `svelte`, `astro`.
+- General: `python`, `go`, `rust`, `java`, `c`, `cpp`, `csharp`, `swift`, `kotlin`, `dart`, `ruby`, `php`, `objective-c`, `objective-cpp`, `scala`, `groovy`, `zig`.
+- Scripts and queries: `shellscript`, `powershell`, `bat`, `lua`, `perl`, `r`, `julia`, `sql`.
+- Functional and Lisp: `clojure`, `lisp`, `common-lisp`, `emacs-lisp`, `scheme`, `haskell`, `ocaml`, `fsharp`, `elixir`, `erlang`.
+- Configuration and build: `jsonc`, `json5`, `yaml`, `toml`, `dockerfile`, `makefile`, `cmake`, `graphql`, `hcl`, `terraform`, `prisma`.
+
+Markdown, plain text, MDX, JSON, and unlisted languages have no TODO lenses or TODO copying. **Copy Path and Line** remains available for all saved files. Language selection follows the editor's language mode, including file associations, rather than the filename extension.
+
+Grammars and the Oniguruma WASM engine are bundled for offline use and loaded when needed. Files without a TODO word skip tokenization. Analysis carries state across lines to distinguish block comments from multiline strings, stops after the last potential TODO line, and caches completed results for the document version and language. Accuracy follows the bundled syntax-highlighting grammars; it is not a full language parser. Exceptionally slow lines stop the analysis instead of returning partially classified comments.
+
+Save untitled files before using the commands. Local files and remote workspace files are supported. Remote paths refer to the remote filesystem.
 
 If lenses are hidden, enable the editor's **Code Lens** setting (`editor.codeLens`).
 
@@ -81,4 +100,4 @@ VSCODE_TEST_EXECUTABLE='/Applications/Cursor.app/Contents/MacOS/Cursor' npm test
 npm run package
 ```
 
-In VS Code or Cursor, run **Extensions: Install from VSIX...** and select `ai-context-tools-0.0.1.vsix`. VS Code 1.78 or later is required.
+In VS Code or Cursor, run **Extensions: Install from VSIX...** and select `ai-context-tools-0.0.2.vsix`. VS Code 1.78 or later is required.

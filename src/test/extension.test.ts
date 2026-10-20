@@ -85,4 +85,63 @@ TODO의 지시사항을 모두 완료했다면 해당 TODO 주석을 삭제하�
 		await vscode.commands.executeCommand('ai-context-tools.copyFileReference', { uri, lineNumber: 999 });
 		assert.strictEqual(await vscode.env.clipboard.readText(), 'unchanged');
 	});
+
+	async function fixture(name: string, text: string): Promise<vscode.TextDocument> {
+		const target = vscode.Uri.joinPath(vscode.workspace.workspaceFolders![0].uri, name);
+		await vscode.workspace.fs.writeFile(target, Buffer.from(text));
+		return vscode.workspace.openTextDocument(target);
+	}
+
+	async function todoLenses(target: vscode.Uri): Promise<vscode.CodeLens[]> {
+		const lenses = await vscode.commands.executeCommand<vscode.CodeLens[]>('vscode.executeCodeLensProvider', target);
+		return lenses.filter(lens => lens.command?.command === 'ai-context-tools.copyTodoPrompt');
+	}
+
+	test('Markdown과 일반 텍스트에서는 렌즈와 TODO 복사를 비활성화합니다', async () => {
+		for (const name of ['document.md', 'document.txt']) {
+			const document = await fixture(name, '// TODO: 문서의 예시\n<!-- TODO: 문서 주석 -->');
+			assert.deepStrictEqual(await todoLenses(document.uri), []);
+			await vscode.env.clipboard.writeText('unchanged');
+			await vscode.commands.executeCommand('ai-context-tools.copyTodoPrompt', { uri: document.uri, lineNumber: 1 });
+			assert.strictEqual(await vscode.env.clipboard.readText(), 'unchanged');
+			await vscode.commands.executeCommand('ai-context-tools.copyFileReference', { uri: document.uri, lineNumber: 1 });
+			assert.strictEqual(await vscode.env.clipboard.readText(), `${document.uri.fsPath}:L1`);
+		}
+	});
+
+	test('블록 주석에서 한 줄만 복사하고 문자열과 뒤따르는 코드는 제외합니다', async () => {
+		const document = await fixture('comments.ts', [
+			'const a = "// TODO: 문자열";',
+			'/*',
+			' * TODO: 작업',
+			' * 이어지는 설명',
+			' */',
+			'/* TODO: 인라인 */ const b = 1;',
+		].join('\n'));
+		await config.update('promptTemplate', '{todo}', vscode.ConfigurationTarget.Workspace);
+		const lenses = await todoLenses(document.uri);
+		assert.deepStrictEqual(lenses.map(lens => lens.range.start.line), [2, 5]);
+		for (const [index, expected] of ['* TODO: 작업', '/* TODO: 인라인 */'].entries()) {
+			await vscode.commands.executeCommand(lenses[index].command!.command, ...lenses[index].command!.arguments!);
+			assert.strictEqual(await vscode.env.clipboard.readText(), expected);
+		}
+	});
+
+	test('편집과 언어 모드 변경 시 이전 분석 결과를 재사용하지 않습니다', async () => {
+		const document = await fixture('changing.ts', '// TODO: 작업');
+		assert.strictEqual((await todoLenses(document.uri)).length, 1);
+		const editor = await vscode.window.showTextDocument(document);
+		await editor.edit(edit => edit.replace(document.lineAt(0).range, 'const x = "// TODO: 문자열";'));
+		assert.deepStrictEqual(await todoLenses(document.uri), []);
+		await config.update('promptTemplate', '{todo}', vscode.ConfigurationTarget.Workspace);
+		await vscode.env.clipboard.writeText('unchanged');
+		await vscode.commands.executeCommand('ai-context-tools.copyTodoPrompt', { uri: document.uri, lineNumber: 1 });
+		assert.strictEqual(await vscode.env.clipboard.readText(), 'unchanged');
+		await editor.edit(edit => edit.replace(document.lineAt(0).range, '// TODO: 새 작업'));
+		assert.strictEqual((await todoLenses(document.uri)).length, 1);
+		const markdown = await vscode.languages.setTextDocumentLanguage(document, 'markdown');
+		assert.deepStrictEqual(await todoLenses(markdown.uri), []);
+		const source = await vscode.languages.setTextDocumentLanguage(markdown, 'typescript');
+		assert.strictEqual((await todoLenses(source.uri)).length, 1);
+	});
 });

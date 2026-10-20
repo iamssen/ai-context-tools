@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { supportedLanguages, TodoComments } from './todoComments';
 
 const namespace = 'ai-context-tools';
 const copyTodoCommand = `${namespace}.copyTodoPrompt`;
@@ -13,9 +14,22 @@ function isFile(uri: vscode.Uri): boolean {
 	return uri.scheme === 'file' || uri.scheme === 'vscode-remote';
 }
 
-function todoAt(document: vscode.TextDocument, line: number): string | undefined {
-	// Single-line, language-independent matching for // TODO comments.
-	return document.lineAt(line).text.match(/\/\/\s*TODO\b.*$/)?.[0].trimEnd();
+const comments = new TodoComments();
+const todoCache = new WeakMap<vscode.TextDocument, { version: number; languageId: string; todos: Map<number, string> }>();
+
+async function documentTodos(document: vscode.TextDocument, token?: vscode.CancellationToken): Promise<Map<number, string>> {
+	const cached = todoCache.get(document);
+	if (cached?.version === document.version && cached.languageId === document.languageId) {
+		return cached.todos;
+	}
+	const { version, languageId } = document;
+	const isCancelled = () => Boolean(token?.isCancellationRequested) || document.isClosed || document.version !== version || document.languageId !== languageId;
+	const todos = await comments.find(document.getText(), languageId, isCancelled);
+	if (isCancelled()) {
+		return new Map();
+	}
+	todoCache.set(document, { version, languageId, todos });
+	return todos;
 }
 
 function filePath(uri: vscode.Uri): string {
@@ -49,9 +63,9 @@ async function copyTodoPrompt(target: LineContext | undefined): Promise<void> {
 	if (!document || !target) {
 		return;
 	}
-	const todo = todoAt(document, target.lineNumber - 1);
+	const todo = (await documentTodos(document)).get(target.lineNumber - 1);
 	if (!todo) {
-		void vscode.window.showWarningMessage('No // TODO comment on this line.');
+		void vscode.window.showWarningMessage('No TODO comment on this line in a supported language.');
 		return;
 	}
 	const template = vscode.workspace.getConfiguration(namespace, target.uri).get<string>('promptTemplate', '');
@@ -75,6 +89,7 @@ export function activate(context: vscode.ExtensionContext): void {
 	const changed = new vscode.EventEmitter<void>();
 	context.subscriptions.push(
 		changed,
+		comments,
 		vscode.commands.registerCommand(copyTodoCommand, (target?: LineContext) => copyTodoPrompt(target ?? currentLine())),
 		vscode.commands.registerCommand(copyReferenceCommand, (target?: LineContext) => copyFileReference(target ?? currentLine())),
 		vscode.workspace.onDidChangeConfiguration(event => {
@@ -82,20 +97,20 @@ export function activate(context: vscode.ExtensionContext): void {
 				changed.fire();
 			}
 		}),
-		vscode.languages.registerCodeLensProvider([{ scheme: 'file' }, { scheme: 'vscode-remote' }], {
+		vscode.languages.registerCodeLensProvider(Object.keys(supportedLanguages).flatMap(language => [
+			{ scheme: 'file', language }, { scheme: 'vscode-remote', language },
+		]), {
 			onDidChangeCodeLenses: changed.event,
-			provideCodeLenses(document, token) {
+			async provideCodeLenses(document, token) {
 				const lenses: vscode.CodeLens[] = [];
-				for (let line = 0; line < document.lineCount; line++) {
+				for (const line of (await documentTodos(document, token)).keys()) {
 					if (token.isCancellationRequested) {
 						return [];
 					}
-					if (todoAt(document, line)) {
-						lenses.push(new vscode.CodeLens(new vscode.Range(line, 0, line, 0), {
-							title: 'Copy TODO as AI Prompt', command: copyTodoCommand,
-							arguments: [{ uri: document.uri, lineNumber: line + 1 } satisfies LineContext],
-						}));
-					}
+					lenses.push(new vscode.CodeLens(new vscode.Range(line, 0, line, 0), {
+						title: 'Copy TODO as AI Prompt', command: copyTodoCommand,
+						arguments: [{ uri: document.uri, lineNumber: line + 1 } satisfies LineContext],
+					}));
 				}
 				return lenses;
 			},

@@ -2,7 +2,7 @@
   "name": "ai-context-tools",
   "displayName": "AI Context Tools",
   "description": "Copy TODO prompts and code references for AI coding agents.",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "engines": {
     "vscode": "^1.78.0"
   },
@@ -22,7 +22,7 @@
       },
       {
         "command": "ai-context-tools.copyFileReference",
-        "title": "Copy File Path and Line",
+        "title": "Copy Path and Line",
         "category": "AI Context Tools"
       }
     ],
@@ -81,5 +81,10 @@
   "overrides": {
     "diff": "^8.0.4",
     "serialize-javascript": "^7.0.6"
+  },
+  "dependencies": {
+    "tm-grammars": "^1.32.22",
+    "vscode-oniguruma": "^2.0.1",
+    "vscode-textmate": "^9.3.2"
   }
 }
