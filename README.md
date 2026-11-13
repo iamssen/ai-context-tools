@@ -1,29 +1,41 @@
 # AI Context Tools
 
-Copy TODO instructions and file references for AI coding agents such as Codex, Claude Code, and ChatGPT.
+Leave `TODO` comments while you read code, then hand them to your AI coding agent **one at a time, with exact location and clear instructions** — in one click.
+
+Works with any agent you paste into: Claude Code, Codex, GitHub Copilot Chat, Cursor, ChatGPT, and others. Nothing is sent anywhere; the extension only writes to your clipboard.
+
+## Why
+
+Asking an agent to "fix all the TODOs" gives it too much scope. Writing a focused prompt by hand means copying the path, finding the line number, pasting the comment, and repeating the same instructions every time. This extension does that part for you:
+
+- A **Copy TODO as AI Prompt** CodeLens appears above every TODO comment.
+- The copied prompt contains the file path, line number, the TODO itself, and instructions to keep changes scoped, verify them, and remove the TODO when done.
+- TODOs are detected with real syntax grammars for 59 languages, so `"TODO"` inside strings is ignored.
 
 ## Usage
 
 - Click **Copy TODO as AI Prompt** above a comment containing an uppercase `TODO` word in a supported language.
-- Right-click a line number and choose **Copy Path and Line**.
+- Right-click a line number and choose **Copy Path and Line** to copy a reference such as `src/example.ts:L35`.
 - Both commands are also available in the Command Palette under **AI Context Tools**, using the current cursor line.
 - Paste the copied text into your AI coding agent.
 
-The default TODO prompt is:
+For a comment like `// TODO: Validate the email before saving.`, the default prompt is:
 
 ```text
-아래 파일과 줄에 있는 TODO의 지시사항을 수행하세요.
-해당 위치와 주변 코드를 확인하고, 기존 구조와 스타일을 유지하면서 필요한 범위만 수정하세요.
+Complete the instructions in the TODO at the file and line below.
+Review that location and the surrounding code, keep the existing structure and style, and change only what is needed.
 
 /your/project/src/example.ts:L35
 
-// TODO: 적은 TODO 내용
+// TODO: Validate the email before saving.
 
-수정 후 변경 사항에 적합한 검증을 수행하세요.
-TODO의 지시사항을 모두 완료했다면 해당 TODO 주석을 삭제하세요. 코드 뒤에 붙은 주석이라면 코드 자체는 유지하세요.
-작업이 미완료되었거나 추가 확인이 필요하다면 TODO를 유지하고 남은 사항을 설명하세요.
-완료 후 변경 내용과 검증 결과를 간략히 알려주세요.
+After making changes, run verification appropriate to the change.
+If you completed every instruction in the TODO, delete the TODO comment. If it is a trailing comment after code, keep the code itself.
+If the work is incomplete or needs further confirmation, keep the TODO and explain what remains.
+When finished, briefly summarize the changes and the verification results.
 ```
+
+When the editor display language is Korean (`ko`), the built-in prompt is in Korean. Set your own template to use any language or wording.
 
 File references use `/your/project/src/example.ts:L35`. Line numbers start at 1. Copying does not modify the file or contact any AI service.
 
@@ -33,12 +45,12 @@ Configure these in user or workspace settings:
 
 ```json
 {
-  "ai-context-tools.promptTemplate": "다음 TODO를 수행하세요.\n\n{file}:L{line}\n\n{todo}",
+  "ai-context-tools.promptTemplate": "Do the following TODO.\n\n{file}:L{line}\n\n{todo}",
   "ai-context-tools.pathFormat": "absolute"
 }
 ```
 
-- **Prompt Template**: `{file}` is the file path, `{line}` is the line number, and `{todo}` is the complete TODO comment. Unknown placeholders remain unchanged.
+- **Prompt Template**: `{file}` is the file path, `{line}` is the line number, and `{todo}` is the complete TODO comment. Unknown placeholders remain unchanged. Leave it empty to use the built-in English or Korean prompt.
 - **Path Format**: `absolute` (default) or `relative`. Relative paths use the containing workspace folder. Files outside the workspace fall back to absolute paths. In multi-root workspaces, open the corresponding project in your AI agent so relative paths resolve correctly.
 
 Settings and TODO text are read when copying; changes do not require rebuilding.
@@ -94,10 +106,18 @@ VSCODE_TEST_EXECUTABLE='/Applications/Visual Studio Code.app/Contents/MacOS/Code
 VSCODE_TEST_EXECUTABLE='/Applications/Cursor.app/Contents/MacOS/Cursor' npm test
 ```
 
-## Package and install
+## Package and publish
 
 ```sh
 npm run package
 ```
 
-In VS Code or Cursor, run **Extensions: Install from VSIX...** and select `ai-context-tools-0.0.2.vsix`. VS Code 1.78 or later is required.
+In VS Code or Cursor, run **Extensions: Install from VSIX...** and select the generated `.vsix`. VS Code 1.78 or later is required.
+
+Publish to the Visual Studio Marketplace and Open VSX (used by Cursor, Windsurf, and VSCodium):
+
+```sh
+npx vsce login iamssen
+npm run publish:vsce
+npm run publish:ovsx -- -p <open-vsx-token>
+```

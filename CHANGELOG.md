@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.0.3
+
+- The built-in prompt now follows the editor display language: Korean for `ko`, English otherwise. An empty `promptTemplate` uses it.
+- Add marketplace metadata, icon, and MIT license for publishing to the Visual Studio Marketplace and Open VSX.
+
 ## 0.0.2
 
 - TextMate 기반으로 59개 언어 ID의 주석 내 TODO를 인식하고 해당 줄만 복사합니다.

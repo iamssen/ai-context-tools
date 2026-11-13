@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { defaultPromptTemplate } from './prompts';
 import { supportedLanguages, TodoComments } from './todoComments';
 
 const namespace = 'ai-context-tools';
@@ -68,7 +69,8 @@ async function copyTodoPrompt(target: LineContext | undefined): Promise<void> {
 		void vscode.window.showWarningMessage('No TODO comment on this line in a supported language.');
 		return;
 	}
-	const template = vscode.workspace.getConfiguration(namespace, target.uri).get<string>('promptTemplate', '');
+	const configured = vscode.workspace.getConfiguration(namespace, target.uri).get<string>('promptTemplate', '');
+	const template = configured.trim() ? configured : defaultPromptTemplate(vscode.env.language);
 	const variables: Record<string, string> = {
 		file: filePath(target.uri), line: String(target.lineNumber), todo,
 	};

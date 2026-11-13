@@ -1,5 +1,6 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
+import { defaultPromptTemplate } from '../prompts';
 
 suite('AI Context Tools', () => {
 	let uri: vscode.Uri;
@@ -7,6 +8,8 @@ suite('AI Context Tools', () => {
 	let originalTemplate: string | undefined;
 	let originalPathFormat: string | undefined;
 	let config: vscode.WorkspaceConfiguration;
+
+	// TODO hello
 
 	suiteSetup(async () => {
 		uri = vscode.Uri.joinPath(vscode.workspace.workspaceFolders![0].uri, 'sample.ts');
@@ -37,17 +40,25 @@ suite('AI Context Tools', () => {
 		const ours = lenses.filter(lens => lens.command?.command === 'ai-context-tools.copyTodoPrompt');
 		assert.deepStrictEqual(ours.map(lens => lens.range.start.line), [0, 1]);
 		await vscode.commands.executeCommand(ours[0].command!.command, ...ours[0].command!.arguments!);
-		assert.strictEqual(await vscode.env.clipboard.readText(), `아래 파일과 줄에 있는 TODO의 지시사항을 수행하세요.
-해당 위치와 주변 코드를 확인하고, 기존 구조와 스타일을 유지하면서 필요한 범위만 수정하세요.
+		const expected = defaultPromptTemplate(vscode.env.language)
+			.replace('{file}', uri.fsPath).replace('{line}', '1').replace('{todo}', '// TODO: 값을 수정하세요.');
+		assert.strictEqual(await vscode.env.clipboard.readText(), expected);
+	});
 
-${uri.fsPath}:L1
+	test('default prompt follows the display language', () => {
+		assert.match(defaultPromptTemplate('ko'), /^아래 파일과 줄에 있는 TODO/);
+		assert.match(defaultPromptTemplate('ko-KR'), /^아래 파일과 줄에 있는 TODO/);
+		assert.match(defaultPromptTemplate('en'), /^Complete the instructions in the TODO/);
+		assert.match(defaultPromptTemplate('ja'), /^Complete the instructions in the TODO/);
+		for (const language of ['en', 'ko']) {
+			assert.ok(['{file}', '{line}', '{todo}'].every(key => defaultPromptTemplate(language).includes(key)));
+		}
+	});
 
-// TODO: 값을 수정하세요.
-
-수정 후 변경 사항에 적합한 검증을 수행하세요.
-TODO의 지시사항을 모두 완료했다면 해당 TODO 주석을 삭제하세요. 코드 뒤에 붙은 주석이라면 코드 자체는 유지하세요.
-작업이 미완료되었거나 추가 확인이 필요하다면 TODO를 유지하고 남은 사항을 설명하세요.
-완료 후 변경 내용과 검증 결과를 간략히 알려주세요.`);
+	test('blank template falls back to the built-in default', async () => {
+		await config.update('promptTemplate', '   ', vscode.ConfigurationTarget.Workspace);
+		await vscode.commands.executeCommand('ai-context-tools.copyTodoPrompt', { uri, lineNumber: 2 });
+		assert.ok((await vscode.env.clipboard.readText()).includes(`${uri.fsPath}:L2\n\n// TODO remove this`));
 	});
 
 	test('gutter context uses clicked line rather than cursor', async () => {

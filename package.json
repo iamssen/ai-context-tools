@@ -1,12 +1,48 @@
 {
   "name": "ai-context-tools",
   "displayName": "AI Context Tools",
-  "description": "Copy TODO prompts and code references for AI coding agents.",
-  "version": "0.0.2",
+  "description": "Turn TODO comments into ready-to-paste prompts for AI coding agents (Claude Code, Codex, Copilot, Cursor) and copy path:line references in one click.",
+  "version": "0.0.3",
+  "publisher": "iamssen",
+  "author": {
+    "name": "SSen"
+  },
+  "license": "MIT",
+  "icon": "images/icon.png",
+  "galleryBanner": {
+    "color": "#1e1b2e",
+    "theme": "dark"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/iamssen/ai-context-tools.git"
+  },
+  "bugs": {
+    "url": "https://github.com/iamssen/ai-context-tools/issues"
+  },
+  "homepage": "https://github.com/iamssen/ai-context-tools#readme",
+  "keywords": [
+    "ai",
+    "prompt",
+    "todo",
+    "codelens",
+    "claude",
+    "claude code",
+    "codex",
+    "copilot",
+    "cursor",
+    "chatgpt",
+    "agent",
+    "llm",
+    "copy path",
+    "line number",
+    "context"
+  ],
   "engines": {
     "vscode": "^1.78.0"
   },
   "categories": [
+    "AI",
     "Other"
   ],
   "activationEvents": [
@@ -41,8 +77,8 @@
         "ai-context-tools.promptTemplate": {
           "type": "string",
           "editPresentation": "multilineText",
-          "default": "아래 파일과 줄에 있는 TODO의 지시사항을 수행하세요.\n해당 위치와 주변 코드를 확인하고, 기존 구조와 스타일을 유지하면서 필요한 범위만 수정하세요.\n\n{file}:L{line}\n\n{todo}\n\n수정 후 변경 사항에 적합한 검증을 수행하세요.\nTODO의 지시사항을 모두 완료했다면 해당 TODO 주석을 삭제하세요. 코드 뒤에 붙은 주석이라면 코드 자체는 유지하세요.\n작업이 미완료되었거나 추가 확인이 필요하다면 TODO를 유지하고 남은 사항을 설명하세요.\n완료 후 변경 내용과 검증 결과를 간략히 알려주세요.",
-          "markdownDescription": "AI task prompt template. Supports `{file}`, `{line}` (1-based), and `{todo}`.",
+          "default": "",
+          "markdownDescription": "AI task prompt template. Supports `{file}`, `{line}` (1-based), and `{todo}`. Leave empty to use the built-in prompt, which follows the editor display language (Korean for `ko`, English otherwise).",
           "scope": "resource"
         },
         "ai-context-tools.pathFormat": {
@@ -65,7 +101,9 @@
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src",
     "test": "vscode-test",
-    "package": "vsce package --allow-missing-repository --skip-license"
+    "package": "vsce package",
+    "publish:vsce": "vsce publish",
+    "publish:ovsx": "npx --yes ovsx publish"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.10",
