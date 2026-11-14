@@ -9,6 +9,7 @@ out/test/**
 .yarnrc
 vsc-extension-quickstart.md
 CLAUDE.md
+RELEASING.md
 **/tsconfig.json
 **/eslint.config.mjs
 **/*.map
