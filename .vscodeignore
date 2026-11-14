@@ -1,15 +1,30 @@
+# Source and tooling
 .vscode/**
 .vscode-test/**
+.github/**
+.claude/**
 src/**
 out/test/**
 .gitignore
 .yarnrc
 vsc-extension-quickstart.md
+CLAUDE.md
 **/tsconfig.json
 **/eslint.config.mjs
 **/*.map
 **/*.ts
 **/.vscode-test.*
+
+# Assets not needed at runtime
 images/icon.svg
-*.vsix
 screenshot.webp
+
+# Build artifacts
+*.vsix
+
+# Logs, secrets, OS files
+**/*.log
+**/.env
+**/.env.*
+**/.DS_Store
+**/Thumbs.db
