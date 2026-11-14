@@ -4,6 +4,8 @@ Leave `TODO` comments while you read code, then hand them to your AI coding agen
 
 Works with any agent you paste into: Claude Code, Codex, GitHub Copilot Chat, Cursor, ChatGPT, and others. Nothing is sent anywhere; the extension only writes to your clipboard.
 
+![Copy TODO as AI Prompt CodeLens above TODO comments](screenshot.webp)
+
 ## Why
 
 Asking an agent to "fix all the TODOs" gives it too much scope. Writing a focused prompt by hand means copying the path, finding the line number, pasting the comment, and repeating the same instructions every time. This extension does that part for you:

@@ -9,8 +9,6 @@ suite('AI Context Tools', () => {
 	let originalPathFormat: string | undefined;
 	let config: vscode.WorkspaceConfiguration;
 
-	// TODO hello
-
 	suiteSetup(async () => {
 		uri = vscode.Uri.joinPath(vscode.workspace.workspaceFolders![0].uri, 'sample.ts');
 		await vscode.workspace.fs.writeFile(uri, Buffer.from('const value = 1; // TODO: 값을 수정하세요.\n// TODO remove this\nconst done = true;\n'));

@@ -12,3 +12,4 @@ vsc-extension-quickstart.md
 **/.vscode-test.*
 images/icon.svg
 *.vsix
+screenshot.webp
